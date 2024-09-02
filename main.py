@@ -1,0 +1,500 @@
+import sys
+
+from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QMainWindow
+from PySide6.QtGui import QFontDatabase
+
+import logging
+import threading
+
+from ui.untitled import Ui_MainWindow
+from config_parser.CConfig import CConfig
+from common import (send_message_box, SMBOX_ICON_TYPE, get_current_unix_time,
+                    is_pattern_match,
+                    is_tricolor_text_valid,
+                    is_tv_sn_text_valid)
+
+from CPrinter import CPrinter
+
+from sql.CSQLQuerys import CSQLQuerys
+from sql.enums import CONNECT_DB_TYPE
+from sql.sql_data import SQL_KEY_HISTORY, SQL_KEY_PROCESS_BASE, SQL_KEY_BASE_SN
+
+
+# pyside6-uic .\ui\untitled.ui -o .\ui\untitled.py
+# pyside6-rcc .\ui\res.qrc -o .\ui\res_rc.py
+# Press the green button in the gutter to run the script.
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.__base_program_version = "0.1"  # Менять при каждом обновлении любой из подпрограмм
+
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+        QFontDatabase.addApplicationFont("designs/Iosevka Bold.ttf")
+        self.setWindowTitle(f'Сканировка Tricolor 2024 v0.1')
+
+        self.cconfig = CConfig()
+        self.anti_flood_print: int = 0
+        self.tv_sn_template: str = ""
+
+        # ---------------------------------------
+        try:
+            if self.cconfig.load_data() is False:
+                send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
+                                 text="Ошибка в файле конфигурации!\n"
+                                      "Один или несколько параметров ошибочны!\n\n"
+                                      "Позовите технолога!",
+                                 title="Внимание!",
+                                 variant_yes="Закрыть", variant_no="", callback=lambda: self.set_close())
+                return
+
+            self.printer_name = self.cconfig.get_printer_name()
+            self.assembled_line = self.cconfig.get_assembled_line()
+            self.cconfig.get_device_model_id()
+            self.tricolor_template = self.cconfig.get_tricolor_template()
+
+        except Exception as err:
+            send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
+                             text="Ошибка в файле конфигурации!\n"
+                                  "Один или несколько параметров ошибочны!\n\n"
+                                  "Позовите технолога!\n\n"
+                                  f"Ошибка: '{err}'",
+                             title="Внимание!",
+                             variant_yes="Закрыть", variant_no="", callback=lambda: self.set_close())
+            return
+
+        self.ctv = TVData()
+        self.cframe = FlickerInterface(self)
+        self.clabel = TextLabel(self)
+        self.cinput = InputField(self)
+        self.cprinter = CPrinter(self.printer_name)
+
+        self.set_default_program_data()
+
+        self.ui.pushButton_print.clicked.connect(self.on_user_presed_on_print_btn)
+        self.ui.pushButton_cancel.clicked.connect(self.on_user_presed_on_cancel_btn)
+        self.ui.lineEdit_input.returnPressed.connect(self.on_user_text_input_field)
+
+        self.set_block_interface()
+
+        timer = threading.Timer(2.0, self.check_programm_data)
+        timer.start()
+        #
+        # self.ui.action_new_project.triggered.connect(self.on_user_clicked_new_project)
+        # self.ui.action_set_parameters.triggered.connect(self.on_user_clicked_config_project)
+        # self.ui.action_open.triggered.connect(self.on_user_focus)
+        # self.set_program_to_default_state()
+
+    def check_programm_data(self) -> bool:
+        self.tv_sn_template = ""
+
+        csql = CSQLQuerys()
+        try:
+            result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
+            if result_connect is True:
+
+                model_id = self.cconfig.get_device_model_id()
+                result = csql.get_tv_model_data(model_id)
+                error_id = 0
+                error_text = ""
+                if not result:
+                    error_id = 3
+                    error_text = "Отсутствует указанная модель в таблице с моделямии устройств!"
+                template, name, tricolor = result
+                if not error_id:
+                    if not tricolor:
+                        error_id = 4
+                        error_text = "Указанный номер модели не является Tricolor TV!"
+
+                if not error_id:
+                    if not len(name) or not len(template):
+                        error_id = 5
+                        error_text = "Указанный номер модели ошибочно внесён в таблицу моделей(Шаблон или название пусты)!"
+
+                if error_id:
+
+                    mess_text = (f"Во время выполнения проверки конфигурации возникла ошибка #{error_id}.\n"
+                                f"{error_text}\n"
+                                f"Код ошибки: 'check_programm_data -> [Error Data]'")
+                    self.clabel.set_text(mess_text, "red", 400.0)
+
+                    return False
+                else:
+                    self.set_unblock_interface()
+                    self.ctv.set_tv_model_id(model_id)
+                    self.ctv.set_tv_template(template)
+                    self.ctv.set_tv_name(name)
+                    self.clabel.set_text("Программа успешно загружена", "green", 4.0)
+                    return True
+
+            else:
+                raise ValueError("Нет подключения к БД!")
+
+        except Exception as err:
+            print(err)
+            self.send_error_message(
+                "Во время выполнения программы произошла ошибка #2.\n"
+                "Обратитесь к системному администратору!\n\n"
+                f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
+            return False
+        finally:
+            csql.disconnect_from_db()
+
+
+
+    def on_clear_input_callback(self):
+        self.cinput.clear_field()
+
+
+    def on_user_text_input_field(self):
+
+        input_text = self.cinput.get_current_value()
+        self.cinput.clear_field()
+        input_text = input_text.upper().replace(" ", "")
+
+        self.clabel.clear_text()
+        self.clabel.clear_device_text()
+        self.clabel.clear_tricolor_text()
+        self.cframe.stop_flick()
+
+        if len(input_text) > 5:
+            if not is_tv_sn_text_valid(input_text) and not is_tricolor_text_valid(input_text):
+                send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_WARNING,
+                                 text=f"В серийном номере устройства обнаружены недопустимые символы!",
+                                 title="Внимание!",
+                                 variant_yes="Закрыть", variant_no="", callback=None)
+                return
+
+            tv_tempate = self.ctv.get_tv_template()
+            # Пикнут и подошло по шаблону триколора
+            if is_pattern_match(self.tricolor_template, input_text):
+                csql = CSQLQuerys()
+                try:
+                    # Этот код полностью проверит есть ли в какой либо таблице этот ключ
+                    result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
+                    if result_connect is True:
+                        result = csql.get_assembled_tv_from_tv_sn(input_text)
+                        if result is not False:
+                            tv_sn, tv_fk, tricolor_key = result
+                            tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
+
+                            self.clabel.set_text(f"Указанный ключ Tricolor ID '{tricolor_key}' уже\n"
+                                                 f"найден в устройстве под SN '{tv_sn}'['{tv_name}'[{tv_fk}]]", "red", 30.0)
+                            self.clabel.set_tricolor_text(tricolor_key)
+                            self.clabel.set_device_sn(tv_sn)
+                            self.cframe.set_flick(5)
+                            return
+                        else:
+                            result = csql.get_tricolor_key_data_in_key_base(input_text)
+                            if result is not False:
+                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' свободен!"
+                                                     , "green", 10.0)
+
+                                return
+
+                            result = csql.get_tricolor_key_data_in_process_base(input_text)
+                            if result is not False:
+                                tv_sn, tv_fk, assembled_line, attached_date, create_date = result
+                                tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
+
+                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' в процессе\n"
+                                                     f"привязки к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
+                                                     f"[Линия: {assembled_line}, A:{attached_date}-C:{create_date}]!"
+                                                     , "yellow", 10.0)
+
+                                self.clabel.set_tricolor_text(input_text)
+                                self.clabel.set_device_sn(tv_sn)
+                                self.cframe.set_flick(5)
+                                return
+
+                            result = csql.get_tricolor_key_data_in_history_base(input_text)
+                            if result is not False:  # дубляж assembled table, так как ещё таблица хистори
+                                tv_sn, tv_fk, assembled_line, attached_date, create_date = result
+                                tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
+
+                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' уже привязан\n"
+                                                     f"к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
+                                                     f"[Линия: {assembled_line}, A:{attached_date}-C:{create_date}]!"
+                                                     , "red", 10.0)
+
+                                self.clabel.set_tricolor_text(input_text)
+                                self.clabel.set_device_sn(tv_sn)
+                                self.cframe.set_flick(5)
+
+                                return
+
+
+                    else:
+                        raise ValueError("Нет подключения к БД!")
+
+                except Exception as err:
+                    print(err)
+                    self.send_error_message(
+                        "Во время выполнения программы произошла ошибка #1.\n"
+                        "Обратитесь к системному администратору!\n\n"
+                        f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
+                    return
+                finally:
+                    csql.disconnect_from_db()
+
+            elif is_pattern_match(tv_tempate, input_text):  # если телевизор
+                pass
+            else:
+                send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
+                                 text=f"Указанные данные '{input_text}' не подходят ни к одному шаблону!",
+                                 title="Ошибка ввода данных",
+                                 variant_yes="Ок", variant_no="", callback=None)
+                return
+
+            # csql = CSQLQuerys()
+            # try:
+            #     result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
+            #     if result_connect is True:
+            #         pass
+            #     else:
+            #         raise ValueError("Нет подключения к БД!")
+            #
+            # except Exception as err:
+            #     print(err)
+            #     self.send_error_message(
+            #         "Во время выполнения программы произошла ошибка #1.\n"
+            #         "Обратитесь к системному администратору!\n\n"
+            #         f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
+            #     return
+            # finally:
+            #     csql.disconnect_from_db()
+
+        else:
+            self.clabel.set_text("SN должен быть более 5 символов!", "red", 2.0)
+
+    @staticmethod
+    def get_current_tv_name_from_tv_model(tv_fk: int, sql_unit: CSQLQuerys) -> str:
+        tv_name = "-"
+        result = sql_unit.get_tv_model_data(tv_fk)
+        if result is not False:
+            _, tv_name, _ = result
+        return tv_name
+
+    def on_user_presed_on_print_btn(self):
+        tricolor_text = self.clabel.get_tricolor_text()
+        tvsn_text = self.clabel.get_device_sn_text()
+        if len(tricolor_text) > 0 and len(tvsn_text) > 0:
+            utime = get_current_unix_time()
+            if self.anti_flood_print < utime:
+                self.cprinter.send_print_label(tricolor_text)
+                self.clabel.set_text(f"Этикетка '{tricolor_text}' для TV SN: '{tvsn_text}' распечатана!", "green", 5.0)
+                self.anti_flood_print = utime + 2
+            else:
+                self.clabel.set_text("Не флудите печатью!", "red", 2.0)
+        else:
+            self.clabel.set_text("Печатать нечего!", "red", 2.0)
+
+
+    def on_user_presed_on_cancel_btn(self):
+        self.set_default_program_data()
+        self.clabel.set_text("Меню обнулено", "none", 2.0)
+
+    def set_default_program_data(self):
+        self.cframe.stop_flick()
+        self.clabel.clear_text()
+        self.clabel.clear_device_text()
+        self.clabel.clear_tricolor_text()
+        self.cinput.clear_field()
+
+
+        # self.cprinter.send_print_label("irewhgrwihjg")
+
+    def closeEvent(self, event):
+        # с таймерами
+        self.cframe.stop_flick()
+        self.clabel.clear_text()
+
+    @staticmethod
+    def set_close():
+        sys.exit()
+
+    def send_error_message(self, text: str):
+        self.set_block_interface()
+
+        send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
+                         text=text,
+                         title="Фатальная ошибка",
+                         variant_yes="Закрыть программу", variant_no="", callback=self.set_close())
+
+    def set_block_interface(self):
+        self.ui.frame_main.setEnabled(False)
+
+    def set_unblock_interface(self):
+        self.ui.frame_main.setEnabled(True)
+
+
+class TVData:
+    def __init__(self):
+        self.__tv_name: str = ""
+        self.__tv_model_id: int = 0
+        self.__tv_template: str = ""
+
+    def set_tv_template(self, model_id: int):
+        self.__tv_template = model_id
+
+    def set_tv_model_id(self, model_id: int):
+        self.__tv_model_id = model_id
+
+    def set_tv_name(self, tv_name: str):
+        self.__tv_name = tv_name
+
+    def get_tv_model_id(self) -> int:
+        return self.__tv_model_id
+
+    def get_tv_template(self) -> str:
+        return self.__tv_template
+
+    def get_tv_name(self) -> str:
+        return self.__tv_name
+
+
+class InputField:
+    def __init__(self, main_window: MainWindow):
+        self.__main_window = main_window
+
+    def get_current_value(self) -> str:
+        return self.__main_window.ui.lineEdit_input.text()
+
+    def set_current_value(self, text: str) -> None:
+        self.__main_window.ui.lineEdit_input.setText(text)
+
+    def clear_field(self):
+        self.set_current_value("")
+
+
+class TextLabel:
+    def __init__(self, main_window: MainWindow):
+        self.__main_window = main_window
+        self.__timer_id: threading.Timer | int = -1
+        self.__tricolor_field_used = False
+        self.__tvsn_field_used = False
+
+    def set_tricolor_text(self, text: str):
+        self.__main_window.ui.label_tricolor_id.setText(f"Tricolor ID: {text}")
+        self.__tricolor_field_used = True
+
+    def clear_tricolor_text(self):
+        self.set_tricolor_text("")
+        self.__tricolor_field_used = False
+
+    def set_device_sn(self, text: str):
+        self.__main_window.ui.label_tv_sn.setText(f"TV SN: {text}")
+        self.__tvsn_field_used = True
+
+    def clear_device_text(self):
+        self.set_device_sn("")
+        self.__tvsn_field_used = False
+
+    def get_device_sn_text(self) -> str:
+        if not self.__tvsn_field_used:
+            return ""
+        return self.__main_window.ui.label_tv_sn.text()
+
+    def get_tricolor_text(self) -> str:
+        if not self.__tricolor_field_used:
+            return ""
+        return self.__main_window.ui.label_tricolor_id.text()
+
+    def set_text(self, text: str, color: str, timer: float):
+        if self.__timer_id != -1:
+            self.__timer_id.cancel()
+        # green
+        # red
+        self.__main_window.ui.label_message.setText(text)
+        if color == "green":
+            self.__main_window.ui.label_message.setStyleSheet(u"color:green")
+        elif color == "red":
+            self.__main_window.ui.label_message.setStyleSheet(u"color:red")
+        elif color == "yellow":
+            self.__main_window.ui.label_message.setStyleSheet(u"color:yellow")
+        else:
+            self.__main_window.ui.label_message.setStyleSheet(u"color:none")
+        self.__timer_id = threading.Timer(timer, self.__on_stop_timer)
+        self.__timer_id.start()
+
+    def clear_text(self):
+        if self.__timer_id != -1:
+            self.__timer_id.cancel()
+            self.__on_stop_timer()
+        self.__main_window.ui.label_message.setText("")
+        self.__main_window.ui.label_message.setStyleSheet(u"background-color:none")
+
+    def __on_stop_timer(self):
+        self.__timer_id = -1
+        self.__main_window.ui.label_message.setText("")
+        self.__main_window.ui.label_message.setStyleSheet(u"background-color:none")
+
+
+class FlickerInterface:
+    def __init__(self, main_window: MainWindow):
+        self.__main_window = main_window
+        self.__timer_id: threading.Timer | int = -1
+        self.__flick_state = False
+        self.__flick_start = False
+        self.__flick_timer_count = 0
+
+    def stop_flick(self):
+        if self.__flick_start:
+            if self.__timer_id != -1:
+                self.__timer_id.cancel()
+        self.__set_default()
+
+    def __set_default(self):
+        self.__flick_start = False
+        self.__timer_id = -1
+        self.__flick_state = False
+        self.__flick_timer_count = 0
+        self.__main_window.ui.frame_main.setStyleSheet(u"background-color:none")
+
+    def is_flick(self) -> bool:
+        if self.__flick_start:
+            return True
+
+    def set_flick(self, timer: int):
+        if self.__timer_id != -1:
+            self.__timer_id.cancel()
+            self.__set_default()
+
+        self.__flick_start = True
+        self.__flick_state = False
+        self.__flick_timer_count = timer
+        self.__start_timer()
+
+    def __on_change_new_state(self):
+        if self.__flick_start:
+            self.__flick_state = not self.__flick_state
+            if self.__flick_state:
+                self.__main_window.ui.frame_main.setStyleSheet(u"background-color:red")
+            else:
+                self.__main_window.ui.frame_main.setStyleSheet(u"background-color:none")
+            self.__flick_timer_count -= 1
+            print("regfwgwre")
+
+            if self.__flick_timer_count <= 0:
+                self.stop_flick()
+            else:
+                self.__start_timer()
+
+
+    def __start_timer(self):
+        self.__timer_id = threading.Timer(1.0, self.__on_change_new_state)
+        self.__timer_id.start()
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+
+    logging.basicConfig(level=logging.DEBUG, filename="py_log.log", filemode="w",
+                        format="%(asctime)s %(levelname)s %(message)s")
+    sys.exit(app.exec())
