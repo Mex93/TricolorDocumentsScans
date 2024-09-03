@@ -1,6 +1,5 @@
 import clr
 import sys
-import os
 
 
 class CPrinter:

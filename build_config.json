@@ -68,6 +68,10 @@
   {
    "optionDest": "datas",
    "value": "C:/Users/Ryazanov/PycharmProjects/TricolorDocumentScans/LabelPrinterLibrary.dll;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/Ryazanov/PycharmProjects/TricolorDocumentScans/config.ini;."
   }
  ],
  "nonPyinstallerOptions": {
