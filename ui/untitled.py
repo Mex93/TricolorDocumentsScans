@@ -108,6 +108,13 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.label_tv_sn)
 
+        self.label_tv_model = QLabel(self.frame_main)
+        self.label_tv_model.setObjectName(u"label_tv_model")
+        self.label_tv_model.setFont(font1)
+        self.label_tv_model.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter)
+
+        self.verticalLayout.addWidget(self.label_tv_model)
+
         self.label_tricolor_id = QLabel(self.frame_main)
         self.label_tricolor_id.setObjectName(u"label_tricolor_id")
         self.label_tricolor_id.setFont(font1)
@@ -200,6 +207,7 @@ class Ui_MainWindow(object):
         self.lineEdit_input.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 SN \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
         self.label_message.setText(QCoreApplication.translate("MainWindow", u"TextLabel", None))
         self.label_tv_sn.setText(QCoreApplication.translate("MainWindow", u"TV_SN:", None))
+        self.label_tv_model.setText(QCoreApplication.translate("MainWindow", u"TV_MODEL:", None))
         self.label_tricolor_id.setText(QCoreApplication.translate("MainWindow", u"TRICOLOR_ID:", None))
         self.pushButton_print.setText(QCoreApplication.translate("MainWindow", u"\u0420\u0430\u0441\u043f\u0435\u0447\u0430\u0442\u0430\u0442\u044c \u044d\u0442\u0438\u043a\u0435\u0442\u043a\u0443", None))
         self.pushButton_cancel.setText(QCoreApplication.translate("MainWindow", u"\u041e\u0442\u043c\u0435\u043d\u0430", None))

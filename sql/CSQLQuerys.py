@@ -37,6 +37,7 @@ class CSQLQuerys(CSqlAgent):
     def get_assembled_tv_from_tricolor_key(self, tricolor_key: str) -> tuple | bool:
         query_string = (f"SELECT "
                         f"{SQL_TABLE_ASSEMBLED_TV.fd_tricolor_key},"
+                        f"{SQL_TABLE_ASSEMBLED_TV.fd_tv_fk},"
                         f"{SQL_TABLE_ASSEMBLED_TV.fd_tv_sn} "
                         f"FROM {SQL_TABLE_NAME.tb_assembled_tv} "
                         f"WHERE {SQL_TABLE_ASSEMBLED_TV.fd_tricolor_key} = %s "
@@ -49,7 +50,8 @@ class CSQLQuerys(CSqlAgent):
 
         tv_sn = result[0].get(SQL_TABLE_ASSEMBLED_TV.fd_tv_sn, None)
         tricolor_key = result[0].get(SQL_TABLE_ASSEMBLED_TV.fd_tricolor_key, None)
-        ret_tup = (tv_sn, tricolor_key)
+        tv_fk = result[0].get(SQL_TABLE_ASSEMBLED_TV.fd_tv_fk, None)
+        ret_tup = (tv_sn, tv_fk, tricolor_key)
         return ret_tup
 
     def get_assembled_tv_from_tv_sn(self, tv_sn: str) -> tuple | bool:

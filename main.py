@@ -159,6 +159,7 @@ class MainWindow(QMainWindow):
         self.clabel.clear_text()
         self.clabel.clear_device_text()
         self.clabel.clear_tricolor_text()
+        self.clabel.clear_model_text()
         self.cframe.stop_flick()
 
         if len(input_text) > 5:
@@ -177,14 +178,16 @@ class MainWindow(QMainWindow):
                     # Этот код полностью проверит есть ли в какой либо таблице этот ключ
                     result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
                     if result_connect is True:
-                        result = csql.get_assembled_tv_from_tv_sn(input_text)
+
+                        result = csql.get_assembled_tv_from_tricolor_key(input_text)
                         if result is not False:
                             tv_sn, tv_fk, tricolor_key = result
                             tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
 
                             self.clabel.set_text(f"Указанный ключ Tricolor ID '{tricolor_key}' уже\n"
-                                                 f"найден в устройстве под SN '{tv_sn}'['{tv_name}'[{tv_fk}]]", "red", 30.0)
+                                                 f"найден в устройстве под SN '{tv_sn}' \n'{tv_name}'[{tv_fk}]", "red", 30.0)
                             self.clabel.set_tricolor_text(tricolor_key)
+                            self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
                             self.clabel.set_device_sn(tv_sn)
                             self.cframe.set_flick(5)
                             return
@@ -204,8 +207,9 @@ class MainWindow(QMainWindow):
                                 self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' в процессе\n"
                                                      f"привязки к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
                                                      f"[Линия: {assembled_line}, A:{attached_date}-C:{create_date}]!"
-                                                     , "yellow", 10.0)
+                                                     , "blue", 10.0)
 
+                                self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
                                 self.clabel.set_tricolor_text(input_text)
                                 self.clabel.set_device_sn(tv_sn)
                                 self.cframe.set_flick(5)
@@ -216,11 +220,12 @@ class MainWindow(QMainWindow):
                                 tv_sn, tv_fk, assembled_line, attached_date, create_date = result
                                 tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
 
-                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' уже привязан\n"
+                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' уже был привязан\n"
                                                      f"к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
                                                      f"[Линия: {assembled_line}, A:{attached_date}-C:{create_date}]!"
                                                      , "red", 10.0)
 
+                                self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
                                 self.clabel.set_tricolor_text(input_text)
                                 self.clabel.set_device_sn(tv_sn)
                                 self.cframe.set_flick(5)
@@ -286,7 +291,7 @@ class MainWindow(QMainWindow):
             utime = get_current_unix_time()
             if self.anti_flood_print < utime:
                 self.cprinter.send_print_label(tricolor_text)
-                self.clabel.set_text(f"Этикетка '{tricolor_text}' для TV SN: '{tvsn_text}' распечатана!", "green", 5.0)
+                self.clabel.set_text(f"Этикетка '{tricolor_text}' для '{tvsn_text}' распечатана!", "green", 5.0)
                 self.anti_flood_print = utime + 2
             else:
                 self.clabel.set_text("Не флудите печатью!", "red", 2.0)
@@ -303,6 +308,7 @@ class MainWindow(QMainWindow):
         self.clabel.clear_text()
         self.clabel.clear_device_text()
         self.clabel.clear_tricolor_text()
+        self.clabel.clear_model_text()
         self.cinput.clear_field()
 
 
@@ -377,6 +383,7 @@ class TextLabel:
         self.__timer_id: threading.Timer | int = -1
         self.__tricolor_field_used = False
         self.__tvsn_field_used = False
+        self.__tvmodel_field_used = False
 
     def set_tricolor_text(self, text: str):
         self.__main_window.ui.label_tricolor_id.setText(f"Tricolor ID: {text}")
@@ -385,6 +392,14 @@ class TextLabel:
     def clear_tricolor_text(self):
         self.set_tricolor_text("")
         self.__tricolor_field_used = False
+
+    def set_model_text(self, text: str):
+        self.__main_window.ui.label_tv_model.setText(f"Model Name: {text}")
+        self.__tvmodel_field_used = True
+
+    def clear_model_text(self):
+        self.set_model_text("")
+        self.__tvmodel_field_used = False
 
     def set_device_sn(self, text: str):
         self.__main_window.ui.label_tv_sn.setText(f"TV SN: {text}")
@@ -398,6 +413,11 @@ class TextLabel:
         if not self.__tvsn_field_used:
             return ""
         return self.__main_window.ui.label_tv_sn.text()
+
+    def get_model_name_text(self) -> str:
+        if not self.__tvmodel_field_used:
+            return ""
+        return self.__main_window.ui.label_tv_model.text()
 
     def get_tricolor_text(self) -> str:
         if not self.__tricolor_field_used:
@@ -416,6 +436,8 @@ class TextLabel:
             self.__main_window.ui.label_message.setStyleSheet(u"color:red")
         elif color == "yellow":
             self.__main_window.ui.label_message.setStyleSheet(u"color:yellow")
+        elif color == "blue":
+            self.__main_window.ui.label_message.setStyleSheet(u"color:blue")
         else:
             self.__main_window.ui.label_message.setStyleSheet(u"color:none")
         self.__timer_id = threading.Timer(timer, self.__on_stop_timer)

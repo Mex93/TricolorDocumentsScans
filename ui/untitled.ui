@@ -115,6 +115,21 @@
                   </widget>
                  </item>
                  <item>
+                  <widget class="QLabel" name="label_tv_model">
+                   <property name="font">
+                    <font>
+                     <pointsize>15</pointsize>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>TV_MODEL:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QLabel" name="label_tricolor_id">
                    <property name="font">
                     <font>

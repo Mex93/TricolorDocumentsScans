@@ -4,46 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6912255b-a3c6-4244-893e-550ea6eb87a0" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/TricolorDocumentScans.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/CPrinter.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/LabelPrinterLibrary.dll" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/barcode_template.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build_config.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/common.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config_parser/CConfig.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/enuuuums.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/py_log.log" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql/CSQL.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql/CSQLAgent.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql/CSQLQuerys.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql/enums.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql/sql_connect_vars.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql/sql_data.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/arrow_down.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/arrow_up.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/disabled_by_default.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/logo.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/print.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/print_ok.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/save.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/select_window_closed.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/images/select_window_open.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/res.qrc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/res_rc.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/untitled.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/untitled.ui" afterDir="false" />
+    <list default="true" id="6912255b-a3c6-4244-893e-550ea6eb87a0" name="Changes" comment="first">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/CSQLQuerys.py" beforeDir="false" afterPath="$PROJECT_DIR$/sql/CSQLQuerys.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/untitled.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/untitled.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/untitled.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ui/untitled.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -127,6 +93,19 @@
       <option name="presentableId" value="Default" />
       <updated>1725257666988</updated>
     </task>
+    <task id="LOCAL-00001" summary="first">
+      <option name="closed" value="true" />
+      <created>1725292649626</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1725292649626</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="first" />
+    <option name="LAST_COMMIT_MESSAGE" value="first" />
   </component>
 </project>
