@@ -84,8 +84,8 @@ class MainWindow(QMainWindow):
 
         self.set_block_interface()
 
-        timer = threading.Timer(2.0, self.check_programm_data)
-        timer.start()
+        self.load_timer = threading.Timer(2.0, self.check_programm_data)
+        self.load_timer.start()
         #
         # self.ui.action_new_project.triggered.connect(self.on_user_clicked_new_project)
         # self.ui.action_set_parameters.triggered.connect(self.on_user_clicked_config_project)
@@ -507,11 +507,16 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         # с таймерами
+        if threading.Timer.is_alive(self.load_timer):
+            self.load_timer.cancel()
         self.cframe.stop_flick()
         self.clabel.clear_text()
 
-    @staticmethod
-    def set_close():
+    def set_close(self):
+        if threading.Timer.is_alive(self.load_timer):
+            self.load_timer.cancel()
+        self.cframe.stop_flick()
+        self.clabel.clear_text()
         sys.exit()
 
     def send_error_message(self, text: str):
