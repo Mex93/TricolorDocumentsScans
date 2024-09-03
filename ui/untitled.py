@@ -122,6 +122,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.label_tricolor_id)
 
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout.addItem(self.verticalSpacer_3)
+
         self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout.addItem(self.verticalSpacer_2)
@@ -184,7 +188,6 @@ class Ui_MainWindow(object):
 
         self.menuBar.addAction(self.menu_info.menuAction())
         self.menu_info.addAction(self.action_info)
-        self.menu_info.addAction(self.action_about_programs)
 
         self.retranslateUi(MainWindow)
 
@@ -203,7 +206,7 @@ class Ui_MainWindow(object):
         self.action_about.setText(QCoreApplication.translate("MainWindow", u"\u041e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435", None))
         self.action_instruction.setText(QCoreApplication.translate("MainWindow", u"\u0418\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f", None))
         self.action_about_programs.setText(QCoreApplication.translate("MainWindow", u"\u041e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435", None))
-        self.action_info.setText(QCoreApplication.translate("MainWindow", u"\u0418\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f", None))
+        self.action_info.setText(QCoreApplication.translate("MainWindow", u"\u041e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435", None))
         self.lineEdit_input.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 SN \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
         self.label_message.setText(QCoreApplication.translate("MainWindow", u"TextLabel", None))
         self.label_tv_sn.setText(QCoreApplication.translate("MainWindow", u"TV_SN:", None))

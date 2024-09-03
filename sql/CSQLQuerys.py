@@ -47,7 +47,8 @@ class CSQLQuerys(CSqlAgent):
         query_string = (f"SELECT "
                         f"{SQL_TABLE_ASSEMBLED_TV.fd_tricolor_key},"
                         f"{SQL_TABLE_ASSEMBLED_TV.fd_tv_fk},"
-                        f"{SQL_TABLE_ASSEMBLED_TV.fd_tv_sn} "
+                        f"{SQL_TABLE_ASSEMBLED_TV.fd_tv_sn}, "
+                        f"{SQL_TABLE_ASSEMBLED_TV.fd_completed_scan_time} "
                         f"FROM {SQL_TABLE_NAME.tb_assembled_tv} "
                         f"WHERE {find_field} = %s "
                         f"LIMIT 1")  # на всякий лимит
@@ -57,10 +58,11 @@ class CSQLQuerys(CSqlAgent):
         if result is False:  # Errorrrrrrrrrrrrr based data
             return False
 
+        date = result[0].get(SQL_TABLE_ASSEMBLED_TV.fd_completed_scan_time, None)
         tv_sn = result[0].get(SQL_TABLE_ASSEMBLED_TV.fd_tv_sn, None)
         tricolor_key = result[0].get(SQL_TABLE_ASSEMBLED_TV.fd_tricolor_key, None)
         tv_fk = result[0].get(SQL_TABLE_ASSEMBLED_TV.fd_tv_fk, None)
-        ret_tup = (tv_sn, tv_fk, tricolor_key)
+        ret_tup = (tv_sn, tv_fk, tricolor_key, date)
         return ret_tup
 
     def get_tricolor_key_data_in_key_base(self, tricolor_key: str) -> tuple | bool:

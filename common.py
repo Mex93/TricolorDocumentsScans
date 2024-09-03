@@ -81,6 +81,17 @@ def get_current_unix_time() -> int:
     return int(int(datetime.now().timestamp()))
 
 
+def convert_date_from_sql_format_ex(date: any):
+    if isinstance(date, str):
+        string = date.split(".")[0]
+        if string is False:
+            return ""
+        else:
+            return string
+    else:
+        return "-"
+
+
 def convert_date_from_sql_format(date: str):
     string = date.split(".")[0]
     if string is False:
