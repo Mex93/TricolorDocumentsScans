@@ -2,7 +2,7 @@
 class SQL_TABLE_NAME:
     tb_tricolor_keys_base = "tricolor_key_base"
     tb_tricolor_history = "tricolor_attached_history"
-    process_atached = "tricolor_keys_attached"
+    tb_process_atached = "tricolor_keys_attached"
     tb_tv_models = "tv"
     tb_assembled_tv = "assembled_tv"
 

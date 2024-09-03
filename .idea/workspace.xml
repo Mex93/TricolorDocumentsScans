@@ -6,10 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="6912255b-a3c6-4244-893e-550ea6eb87a0" name="Changes" comment="first">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/enuuuums.py" beforeDir="false" afterPath="$PROJECT_DIR$/enuuuums.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/CSQL.py" beforeDir="false" afterPath="$PROJECT_DIR$/sql/CSQL.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sql/CSQLQuerys.py" beforeDir="false" afterPath="$PROJECT_DIR$/sql/CSQLQuerys.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/untitled.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/untitled.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/untitled.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ui/untitled.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/sql_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/sql/sql_data.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,11 +102,35 @@
       <option name="project" value="LOCAL" />
       <updated>1725292649626</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="first">
+      <option name="closed" value="true" />
+      <created>1725343478205</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1725343478205</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first" />
     <option name="LAST_COMMIT_MESSAGE" value="first" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>333</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/sql/CSQLQuerys.py</url>
+          <line>166</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

@@ -225,7 +225,8 @@ class csql_eng:
                                  query_str: str,
                                  args: tuple = None,
                                  mode="_a",
-                                 count_rows: int = 1) -> bool | tuple | dict:
+                                 count_rows: int = 1,
+                                 transaction: bool = False) -> bool | tuple | dict:
 
         """
         Runs SQL request $query by default returns all result raws as an array returns FALSE if query result is empty
@@ -233,12 +234,14 @@ class csql_eng:
         Аналог функции ms(не нативная) из php из жены Юры скрипта
         Быстрый запрос и результат в массиве, в нашем случае список или словарь
         Только SELECT запросы, остальные нафиг
-
+        transaction = если тру то коммит отключается (нужно делать отдельно)
+        :param transaction:
         :param args:
         :param count_rows:
         :param sql_handle:
         :param query_str:
         :param mode:
+        :transaction
         :return:
         """
         s = False  # Результат
@@ -265,7 +268,7 @@ class csql_eng:
                 return False
             """
             fetch a result row as an associative array. Return false if it's empty 
-            
+
             RealDictCursor — это курсор, который использует реальный dict в качестве базового типа для строк. 
             Этот курсор не позволяет выполнять обычную индексацию для получения данных. 
             данные можно получить только с помощью ключей имен столбцов таблицы.
@@ -330,7 +333,8 @@ class csql_eng:
 
                 cursor = sql_handle.cursor()
                 cursor.execute(query_str, args)
-                sql_handle.commit()
+                if transaction is False:
+                    sql_handle.commit()
                 s = True
             except Exception as err:
                 if self.__sql_error_log is True:
@@ -348,7 +352,8 @@ class csql_eng:
 
                 cursor = sql_handle.cursor()
                 cursor.execute(query_str, args)
-                sql_handle.commit()
+                if transaction is False:
+                    sql_handle.commit()
                 s = True
             except Exception as err:
                 if self.__sql_error_log is True:
@@ -366,7 +371,8 @@ class csql_eng:
             try:
                 cursor = sql_handle.cursor()
                 cursor.execute(query_str, args)
-                sql_handle.commit()
+                if transaction is False:
+                    sql_handle.commit()
                 s = cursor.fetchmany(count_rows)
 
             except Exception as err:

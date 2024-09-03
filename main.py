@@ -13,7 +13,7 @@ from common import (send_message_box, SMBOX_ICON_TYPE, get_current_unix_time,
                     is_pattern_match,
                     is_tricolor_text_valid,
                     is_tv_sn_text_valid)
-
+from enuuuums import INPUT_TYPE
 from CPrinter import CPrinter
 
 from sql.CSQLQuerys import CSQLQuerys
@@ -98,38 +98,21 @@ class MainWindow(QMainWindow):
             if result_connect is True:
 
                 model_id = self.cconfig.get_device_model_id()
-                result = csql.get_tv_model_data(model_id)
-                error_id = 0
-                error_text = ""
-                if not result:
-                    error_id = 3
-                    error_text = "Отсутствует указанная модель в таблице с моделямии устройств!"
-                template, name, tricolor = result
-                if not error_id:
-                    if not tricolor:
-                        error_id = 4
-                        error_text = "Указанный номер модели не является Tricolor TV!"
-
-                if not error_id:
-                    if not len(name) or not len(template):
-                        error_id = 5
-                        error_text = "Указанный номер модели ошибочно внесён в таблицу моделей(Шаблон или название пусты)!"
-
-                if error_id:
-
-                    mess_text = (f"Во время выполнения проверки конфигурации возникла ошибка #{error_id}.\n"
-                                f"{error_text}\n"
-                                f"Код ошибки: 'check_programm_data -> [Error Data]'")
-                    self.clabel.set_text(mess_text, "red", 400.0)
-
-                    return False
-                else:
+                result = self.check_correct_data_in_models_table(model_id, csql)
+                if result[0] == 0:
+                    error_id, template, name, tricolor = result
                     self.set_unblock_interface()
                     self.ctv.set_tv_model_id(model_id)
                     self.ctv.set_tv_template(template)
                     self.ctv.set_tv_name(name)
                     self.clabel.set_text("Программа успешно загружена", "green", 4.0)
                     return True
+
+                else:
+                    _, error_text = result
+                    self.clabel.set_text(error_text, "red", 400.0)
+
+                    return False
 
             else:
                 raise ValueError("Нет подключения к БД!")
@@ -144,11 +127,8 @@ class MainWindow(QMainWindow):
         finally:
             csql.disconnect_from_db()
 
-
-
     def on_clear_input_callback(self):
         self.cinput.clear_field()
-
 
     def on_user_text_input_field(self):
 
@@ -172,107 +152,253 @@ class MainWindow(QMainWindow):
 
             tv_tempate = self.ctv.get_tv_template()
             # Пикнут и подошло по шаблону триколора
+
+            input_type = INPUT_TYPE.NONE
             if is_pattern_match(self.tricolor_template, input_text):
-                csql = CSQLQuerys()
-                try:
-                    # Этот код полностью проверит есть ли в какой либо таблице этот ключ
-                    result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
-                    if result_connect is True:
-
-                        result = csql.get_assembled_tv_from_tricolor_key(input_text)
-                        if result is not False:
-                            tv_sn, tv_fk, tricolor_key = result
-                            tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
-
-                            self.clabel.set_text(f"Указанный ключ Tricolor ID '{tricolor_key}' уже\n"
-                                                 f"найден в устройстве под SN '{tv_sn}' \n'{tv_name}'[{tv_fk}]", "red", 30.0)
-                            self.clabel.set_tricolor_text(tricolor_key)
-                            self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
-                            self.clabel.set_device_sn(tv_sn)
-                            self.cframe.set_flick(5)
-                            return
-                        else:
-                            result = csql.get_tricolor_key_data_in_key_base(input_text)
-                            if result is not False:
-                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' свободен!"
-                                                     , "green", 10.0)
-
-                                return
-
-                            result = csql.get_tricolor_key_data_in_process_base(input_text)
-                            if result is not False:
-                                tv_sn, tv_fk, assembled_line, attached_date, create_date = result
-                                tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
-
-                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' в процессе\n"
-                                                     f"привязки к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
-                                                     f"[Линия: {assembled_line}, A:{attached_date}-C:{create_date}]!"
-                                                     , "blue", 10.0)
-
-                                self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
-                                self.clabel.set_tricolor_text(input_text)
-                                self.clabel.set_device_sn(tv_sn)
-                                self.cframe.set_flick(5)
-                                return
-
-                            result = csql.get_tricolor_key_data_in_history_base(input_text)
-                            if result is not False:  # дубляж assembled table, так как ещё таблица хистори
-                                tv_sn, tv_fk, assembled_line, attached_date, create_date = result
-                                tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
-
-                                self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' уже был привязан\n"
-                                                     f"к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
-                                                     f"[Линия: {assembled_line}, A:{attached_date}-C:{create_date}]!"
-                                                     , "red", 10.0)
-
-                                self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
-                                self.clabel.set_tricolor_text(input_text)
-                                self.clabel.set_device_sn(tv_sn)
-                                self.cframe.set_flick(5)
-
-                                return
-
-
-                    else:
-                        raise ValueError("Нет подключения к БД!")
-
-                except Exception as err:
-                    print(err)
-                    self.send_error_message(
-                        "Во время выполнения программы произошла ошибка #1.\n"
-                        "Обратитесь к системному администратору!\n\n"
-                        f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
-                    return
-                finally:
-                    csql.disconnect_from_db()
-
+                input_type = INPUT_TYPE.TRICOLOR_ID
             elif is_pattern_match(tv_tempate, input_text):  # если телевизор
-                pass
-            else:
+                input_type = INPUT_TYPE.TV_SN
+
+            if input_type == INPUT_TYPE.NONE:
                 send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
                                  text=f"Указанные данные '{input_text}' не подходят ни к одному шаблону!",
                                  title="Ошибка ввода данных",
                                  variant_yes="Ок", variant_no="", callback=None)
                 return
+            pmodel_id = self.ctv.get_tv_model_id()
+            csql = CSQLQuerys()
+            try:
+                # Этот код полностью проверит есть ли в какой либо таблице этот ключ
+                result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
+                if result_connect is True:
+                    csql = CSQLQuerys()
+                    try:
 
-            # csql = CSQLQuerys()
-            # try:
-            #     result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
-            #     if result_connect is True:
-            #         pass
-            #     else:
-            #         raise ValueError("Нет подключения к БД!")
-            #
-            # except Exception as err:
-            #     print(err)
-            #     self.send_error_message(
-            #         "Во время выполнения программы произошла ошибка #1.\n"
-            #         "Обратитесь к системному администратору!\n\n"
-            #         f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
-            #     return
-            # finally:
-            #     csql.disconnect_from_db()
+                        # Этот код полностью проверит есть ли в какой либо таблице этот ключ
+                        result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
+                        if result_connect is True:
 
+                            result = csql.get_assembled_tv_from_tricolor_key(input_type, input_text)
+                            if result is not False:
+                                tv_sn, tv_fk, tricolor_key = result
+
+                                if tricolor_key is not None:
+                                    tricolor_key = tricolor_key.upper()
+                                if tv_sn is not None:
+                                    tv_sn = tv_sn.upper()
+
+                                is_find = False
+                                if input_type == INPUT_TYPE.TRICOLOR_ID:
+                                    if tv_fk == pmodel_id:
+                                        is_find = True
+                                elif input_type == INPUT_TYPE.TV_SN:
+                                    if tricolor_key is not None:
+                                        if tv_fk == pmodel_id:
+                                            is_find = True
+                                if is_find:
+                                    tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
+
+                                    if input_type == INPUT_TYPE.TRICOLOR_ID:
+                                        self.clabel.set_text(f"Указанный ключ Tricolor ID '{tricolor_key}' уже\n"
+                                                             f"найден в устройстве под SN '{tv_sn}' \n'{tv_name}'[{tv_fk}]",
+                                                             "red", 30.0)
+                                    elif input_type == INPUT_TYPE.TV_SN:
+                                        self.clabel.set_text(f"Ключ Tricolor ID '{tricolor_key}' уже\n"
+                                                             f"найден в устройстве под SN '{tv_sn}' \n'{tv_name}'[{tv_fk}]",
+                                                             "red", 30.0)
+
+                                    self.clabel.set_tricolor_text(tricolor_key)
+                                    self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
+                                    self.clabel.set_device_sn(tv_sn)
+                                    self.cframe.set_flick(5)
+                                    return
+
+                            result = csql.get_tricolor_key_data_in_process_base(input_type, input_text)
+                            if result is not False:
+                                tv_sn, tv_fk, tricolor_id, assembled_line, attached_date, create_date = result
+
+                                if tricolor_id is not None:
+                                    tricolor_id = tricolor_id.upper()
+                                if tv_sn is not None:
+                                    tv_sn = tv_sn.upper()
+
+                                is_find = False
+                                if input_type == INPUT_TYPE.TRICOLOR_ID:
+                                    if tv_fk == pmodel_id:
+                                        is_find = True
+                                elif input_type == INPUT_TYPE.TV_SN:
+                                    if tricolor_id is not None:
+                                        is_find = True
+                                if is_find is True:
+                                    tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
+
+                                    if input_type == INPUT_TYPE.TRICOLOR_ID:
+                                        self.clabel.set_text(f"Указанный ключ Tricolor ID '{tricolor_id}' в процессе\n"
+                                                             f"привязки к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
+                                                             f"[Линия: {assembled_line}, A:{str(attached_date)}-C:{str(create_date)}]!"
+                                                             , "blue", 10.0)
+                                    elif input_type == INPUT_TYPE.TV_SN:
+                                        self.clabel.set_text(f"Ключ Tricolor ID '{tricolor_id}' в процессе\n"
+                                                             f"привязки к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
+                                                             f"[Линия: {assembled_line}, A:{str(attached_date)}-C:{str(create_date)}]!"
+                                                             , "blue", 10.0)
+
+                                    self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
+                                    self.clabel.set_tricolor_text(input_text)
+                                    self.clabel.set_device_sn(tv_sn)
+                                    self.cframe.set_flick(5)
+                                    return
+
+                            result = csql.get_tricolor_key_data_in_history_base(input_type, input_text)
+                            if result is not False:  # дубляж assembled table, так как ещё таблица хистори
+                                tv_sn, tv_fk, tricolor_id, assembled_line, attached_date, create_date = result
+
+                                if tricolor_id is not None:
+                                    tricolor_id = tricolor_id.upper()
+                                if tv_sn is not None:
+                                    tv_sn = tv_sn.upper()
+
+                                is_find = False
+                                if input_type == INPUT_TYPE.TRICOLOR_ID:
+                                    if tv_fk == pmodel_id:
+                                        is_find = True
+                                elif input_type == INPUT_TYPE.TV_SN:
+                                    if tricolor_id is not None:
+                                        if tv_fk == pmodel_id:
+                                            is_find = True
+                                if is_find is True:
+                                    tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
+
+                                    if input_type == INPUT_TYPE.TRICOLOR_ID:
+                                        self.clabel.set_text(
+                                            f"Указанный ключ Tricolor ID '{tricolor_id}' уже был привязан\n"
+                                            f"к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
+                                            f"[Линия: {assembled_line}, A:{str(attached_date)}-C:{str(create_date)}]!"
+                                            , "red", 10.0)
+                                    elif input_type == INPUT_TYPE.TV_SN:
+                                        self.clabel.set_text(
+                                            f"Ключ Tricolor ID '{tricolor_id}' уже был привязан\n"
+                                            f"к устройству: '{tv_name}[{tv_fk}] {tv_sn}'\n"
+                                            f"[Линия: {assembled_line}, A:{str(attached_date)}-C:{str(create_date)}]!"
+                                            , "red", 10.0)
+
+                                    self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
+                                    self.clabel.set_tricolor_text(input_text)
+                                    self.clabel.set_device_sn(tv_sn)
+                                    self.cframe.set_flick(5)
+
+                                    return
+
+                            if input_type == INPUT_TYPE.TRICOLOR_ID:
+                                result = csql.get_tricolor_key_data_in_key_base(input_text)
+                                if result is not False:
+                                    self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' свободен!"
+                                                         , "green", 10.0)
+
+                                    return
+                            elif input_type == INPUT_TYPE.TV_SN:
+
+                                result = self.check_correct_data_in_models_table(pmodel_id, csql)
+                                if result[0] == 0:  # ошибок нет
+                                    result = csql.get_tricolor_empty_key_from_key_base(pmodel_id)
+                                    if result is not False:  # свободный ключ найден
+                                        tv_fk, tricolor_key, load_date = result
+
+                                        if tricolor_key is not None:
+                                            tricolor_key = tricolor_key.upper()
+
+                                        handle = csql.get_sql_handle()
+                                        result_s = False
+                                        try:
+                                            is_success_insert_in_key_process = (
+                                                csql.insert_key_in_attached_base(tv_fk,
+                                                                                input_text,
+                                                                                tricolor_key,
+                                                                                self.assembled_line,
+                                                                                load_date))
+                                            is_success_delete_from_key_base = csql.delete_key_from_key_base(
+                                                tv_fk,
+                                                tricolor_key)
+
+                                            if is_success_delete_from_key_base and is_success_insert_in_key_process:
+                                                result_s = True
+
+                                            else:
+                                                raise ValueError("Error in create table")
+                                        except:
+                                            handle.rollback()
+                                        else:
+                                            handle.commit()
+
+                                        if result_s is False:
+                                            self.send_error_message(
+                                                "Во время выполнения программы произошла ошибка #7.\n"
+                                                "Обратитесь к системному администратору!\n\n"
+                                                f"Код ошибки: 'Привязка ключа в process key base -> [{tv_fk,
+                                                                                                    input_text,
+                                                                                                    tricolor_key,
+                                                                                                    self.assembled_line,
+                                                                                                    str(load_date)}]'")
+                                            return
+                                        # привязка
+                                        tv_name = self.ctv.get_tv_name()
+
+                                        self.clabel.set_text(
+                                            f"Ключ Tricolor ID '{tricolor_key}' успешно привязан к устройству\n"
+                                            f"'{tv_name}[{tv_fk}] {input_text}'\n"
+                                            f"[Линия: {self.assembled_line}]!"
+                                            , "green", 10.0)
+
+                                        self.clabel.set_model_text(f"{tv_name}[{tv_fk}]")
+                                        self.clabel.set_tricolor_text(input_text)
+                                        self.clabel.set_device_sn(input_text)
+                                        self.cprinter.send_print_label(tricolor_key)
+                                        self.cframe.set_flick(3, "green")
+                                        return
+
+                                    else:
+                                        tv_name = self.ctv.get_tv_name()
+
+                                        self.clabel.set_text(f"Для указанной модели\n"
+                                                             f"'{tv_name}'[{pmodel_id}]\n"
+                                                             f"нет свободных ключей в базе данных!'\n"
+                                                             , "red", 10.0)
+
+                                        self.cframe.set_flick(4)
+                                        return
+
+                                else:
+                                    _, error_text = result
+                                    self.clabel.set_text(error_text, "red", 400.0)
+
+                                    return False
+                        else:
+                            raise ValueError("Нет подключения к БД!")
+
+                    except Exception as err:
+                        print(err)
+                        self.send_error_message(
+                            "Во время выполнения программы произошла ошибка #1.\n"
+                            "Обратитесь к системному администратору!\n\n"
+                            f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
+                        return
+                    finally:
+                        csql.disconnect_from_db()
+
+
+
+                else:
+                    raise ValueError("Нет подключения к БД!")
+
+            except Exception as err:
+                print(err)
+                self.send_error_message(
+                    "Во время выполнения программы произошла ошибка #1.\n"
+                    "Обратитесь к системному администратору!\n\n"
+                    f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
+                return
+            finally:
+                csql.disconnect_from_db()
         else:
             self.clabel.set_text("SN должен быть более 5 символов!", "red", 2.0)
 
@@ -283,6 +409,36 @@ class MainWindow(QMainWindow):
         if result is not False:
             _, tv_name, _ = result
         return tv_name
+
+    @staticmethod
+    def check_correct_data_in_models_table(tv_fk: int, sql_unit: CSQLQuerys) -> tuple:
+
+        result = sql_unit.get_tv_model_data(tv_fk)
+        error_id = 0
+        error_text = ""
+        if not result:
+            error_id = 3
+            error_text = "Отсутствует указанная модель в таблице с моделямии устройств!"
+        template, name, tricolor = result
+        if not error_id:
+            if not tricolor:
+                error_id = 4
+                error_text = "Указанный номер модели не является Tricolor TV!"
+
+        if not error_id:
+            if not len(name) or not len(template):
+                error_id = 5
+                error_text = "Указанный номер модели ошибочно внесён в таблицу моделей(Шаблон или название пусты)!"
+
+        if error_id > 0:
+            mess_text = (f"Во время выполнения проверки конфигурации возникла ошибка #{error_id}.\n"
+                         f"{error_text}\n"
+                         f"Код ошибки: 'check_device_model_data -> [Error Data]'")
+
+            rtuple = (error_id, mess_text)
+            return rtuple
+        rtuple = (error_id, template, name, tricolor)
+        return rtuple
 
     def on_user_presed_on_print_btn(self):
         tricolor_text = self.clabel.get_tricolor_text()
@@ -298,7 +454,6 @@ class MainWindow(QMainWindow):
         else:
             self.clabel.set_text("Печатать нечего!", "red", 2.0)
 
-
     def on_user_presed_on_cancel_btn(self):
         self.set_default_program_data()
         self.clabel.set_text("Меню обнулено", "none", 2.0)
@@ -310,7 +465,6 @@ class MainWindow(QMainWindow):
         self.clabel.clear_tricolor_text()
         self.clabel.clear_model_text()
         self.cinput.clear_field()
-
 
         # self.cprinter.send_print_label("irewhgrwihjg")
 
@@ -329,7 +483,7 @@ class MainWindow(QMainWindow):
         send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
                          text=text,
                          title="Фатальная ошибка",
-                         variant_yes="Закрыть программу", variant_no="", callback=self.set_close())
+                         variant_yes="Закрыть программу", variant_no="", callback=lambda: self.set_close())
 
     def set_block_interface(self):
         self.ui.frame_main.setEnabled(False)
@@ -426,7 +580,8 @@ class TextLabel:
 
     def set_text(self, text: str, color: str, timer: float):
         if self.__timer_id != -1:
-            self.__timer_id.cancel()
+            if threading.Timer.is_alive(self.__timer_id):
+                self.__timer_id.cancel()
         # green
         # red
         self.__main_window.ui.label_message.setText(text)
@@ -445,7 +600,8 @@ class TextLabel:
 
     def clear_text(self):
         if self.__timer_id != -1:
-            self.__timer_id.cancel()
+            if threading.Timer.is_alive(self.__timer_id):
+                self.__timer_id.cancel()
             self.__on_stop_timer()
         self.__main_window.ui.label_message.setText("")
         self.__main_window.ui.label_message.setStyleSheet(u"background-color:none")
@@ -462,18 +618,21 @@ class FlickerInterface:
         self.__timer_id: threading.Timer | int = -1
         self.__flick_state = False
         self.__flick_start = False
+        self.__color: str = ""
         self.__flick_timer_count = 0
 
     def stop_flick(self):
         if self.__flick_start:
             if self.__timer_id != -1:
-                self.__timer_id.cancel()
+                if threading.Timer.is_alive(self.__timer_id):
+                    self.__timer_id.cancel()
         self.__set_default()
 
     def __set_default(self):
         self.__flick_start = False
         self.__timer_id = -1
         self.__flick_state = False
+        self.__color = ""
         self.__flick_timer_count = 0
         self.__main_window.ui.frame_main.setStyleSheet(u"background-color:none")
 
@@ -481,11 +640,13 @@ class FlickerInterface:
         if self.__flick_start:
             return True
 
-    def set_flick(self, timer: int):
+    def set_flick(self, timer: int, color: str="red"):
         if self.__timer_id != -1:
-            self.__timer_id.cancel()
+            if threading.Timer.is_alive(self.__timer_id):
+                self.__timer_id.cancel()
             self.__set_default()
 
+        self.__color = color
         self.__flick_start = True
         self.__flick_state = False
         self.__flick_timer_count = timer
@@ -495,17 +656,15 @@ class FlickerInterface:
         if self.__flick_start:
             self.__flick_state = not self.__flick_state
             if self.__flick_state:
-                self.__main_window.ui.frame_main.setStyleSheet(u"background-color:red")
+                self.__main_window.ui.frame_main.setStyleSheet(f"background-color:{self.__color}")
             else:
-                self.__main_window.ui.frame_main.setStyleSheet(u"background-color:none")
+                self.__main_window.ui.frame_main.setStyleSheet(f"background-color:none")
             self.__flick_timer_count -= 1
-            print("regfwgwre")
 
             if self.__flick_timer_count <= 0:
                 self.stop_flick()
             else:
                 self.__start_timer()
-
 
     def __start_timer(self):
         self.__timer_id = threading.Timer(1.0, self.__on_change_new_state)
