@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'untitled2.ui'
+## Form generated from reading UI file 'untitled.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.0
+## Created by: Qt User Interface Compiler version 6.7.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -28,6 +28,9 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(1012, 370)
         MainWindow.setMinimumSize(QSize(719, 297))
+        icon = QIcon()
+        icon.addFile(u":/res/images/logo.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        MainWindow.setWindowIcon(icon)
         MainWindow.setIconSize(QSize(30, 30))
         self.action_info = QAction(MainWindow)
         self.action_info.setObjectName(u"action_info")
@@ -124,9 +127,9 @@ class Ui_MainWindow(object):
         self.pushButton_print = QPushButton(self.frame_main)
         self.pushButton_print.setObjectName(u"pushButton_print")
         self.pushButton_print.setFont(font1)
-        icon = QIcon()
-        icon.addFile(u":/res/images/print_ok.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButton_print.setIcon(icon)
+        icon1 = QIcon()
+        icon1.addFile(u":/res/images/print_ok.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.pushButton_print.setIcon(icon1)
         self.pushButton_print.setIconSize(QSize(40, 40))
 
         self.horizontalLayout.addWidget(self.pushButton_print)
@@ -135,9 +138,9 @@ class Ui_MainWindow(object):
         self.pushButton_cancel.setObjectName(u"pushButton_cancel")
         self.pushButton_cancel.setMinimumSize(QSize(354, 48))
         self.pushButton_cancel.setFont(font1)
-        icon1 = QIcon()
-        icon1.addFile(u":/res/images/disabled_by_default.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButton_cancel.setIcon(icon1)
+        icon2 = QIcon()
+        icon2.addFile(u":/res/images/disabled_by_default.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.pushButton_cancel.setIcon(icon2)
         self.pushButton_cancel.setIconSize(QSize(40, 40))
 
         self.horizontalLayout.addWidget(self.pushButton_cancel)
