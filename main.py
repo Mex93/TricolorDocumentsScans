@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         QFontDatabase.addApplicationFont("designs/Iosevka Bold.ttf")
-        self.setWindowTitle(f'Сканировка Tricolor 2024 v0.1b')
+        self.setWindowTitle(f'Сканировка Tricolor 2024 v0.1b [Режим: привязка]')
 
         logging.basicConfig(level=logging.INFO, filename="key_logging.log", filemode="a",
                             format="%(asctime)s %(levelname)s %(message)s")
@@ -58,6 +58,7 @@ class MainWindow(QMainWindow):
             self.assembled_line = self.cconfig.get_assembled_line()
             self.cconfig.get_device_model_id()
             self.tricolor_template = self.cconfig.get_tricolor_template()
+            self.info_mode = self.cconfig.get_info_mode()
 
         except Exception as err:
             send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
@@ -68,7 +69,8 @@ class MainWindow(QMainWindow):
                              title="Внимание!",
                              variant_yes="Закрыть", variant_no="", callback=lambda: self.set_close())
             return
-
+        if self.info_mode == 1:
+            self.setWindowTitle(f'Сканировка Tricolor 2024 v0.1b [Режим: информация]')
         self.ctv = TVData()
         self.cframe = FlickerInterface(self)
         self.clabel = TextLabel(self)
@@ -213,13 +215,13 @@ class MainWindow(QMainWindow):
                                     tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
 
                                     if input_type == INPUT_TYPE.TRICOLOR_ID:
-                                        self.clabel.set_text(f"Указанный ключ Tricolor ID '{tricolor_key}' уже\n"
-                                                             f"найден в устройстве под SN '{tv_sn}''{tv_name}'[{tv_fk}]\n"
+                                        self.clabel.set_text(f"Указанный ключ Tricolor ID '{tricolor_key}' найден\n"
+                                                             f"в устройстве под SN '{tv_sn}''{tv_name}'[{tv_fk}]\n"
                                                              f"Date: {convert_date_from_sql_format_ex(str(date))}",
                                                              "red", 30.0)
                                     elif input_type == INPUT_TYPE.TV_SN:
-                                        self.clabel.set_text(f"Ключ Tricolor ID '{tricolor_key}' уже\n"
-                                                             f"найден в устройстве под SN '{tv_sn}''{tv_name}'[{tv_fk}]\n"
+                                        self.clabel.set_text(f"Ключ Tricolor ID '{tricolor_key}' найден\n"
+                                                             f"в устройстве под SN '{tv_sn}''{tv_name}'[{tv_fk}]\n"
                                                              f"Date: {convert_date_from_sql_format_ex(str(date))}",
                                                              "red", 30.0)
 
@@ -319,6 +321,13 @@ class MainWindow(QMainWindow):
 
                                     return
                             elif input_type == INPUT_TYPE.TV_SN:
+
+                                if self.info_mode == 1:
+                                    self.clabel.set_text(
+                                        f"Для указанного SN: '{input_text}' не обнажен ключ!\n"
+                                        f"Ключ не привязан ни к устройству, ни к базе истории ключей!"
+                                        , "red", 10.0)
+                                    return
 
                                 result = self.check_correct_data_in_models_table(pmodel_id, csql)
                                 if result[0] == 0:  # ошибок нет

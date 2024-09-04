@@ -24,6 +24,7 @@ class CConfig:
         self.__ASSEMBLED_LINE = ''  # Название принтера в компе
         self.__TV_MODEL_ID = ''  # Название принтера в компе
         self.__TRICOLOR_TEMPLATE = ''  # Название принтера в компе
+        self.__INFO_MODE = ''  # Название принтера в компе
 
         self.__config = configparser.ConfigParser()
         self.__config.add_section('program')
@@ -38,6 +39,7 @@ class CConfig:
         self.__ASSEMBLED_LINE = ''
         self.__TV_MODEL_ID = ''
         self.__TRICOLOR_TEMPLATE = ''
+        self.__INFO_MODE = ''
 
     def get_config(self):
         self.__config.read('config.ini', encoding="utf-8")
@@ -53,6 +55,7 @@ class CConfig:
         self.__TV_MODEL_ID = self.__config.get('program', 'DEVICE_MODEL_ID')
 
         self.__TRICOLOR_TEMPLATE = self.__config.get('program', 'TRICOLOR_TEMPLATE')
+        self.__INFO_MODE = self.__config.get('program', 'INFO_MODE')
 
     @staticmethod
     def is_config_created():
@@ -72,6 +75,7 @@ class CConfig:
             self.__config.set('program', 'ASSEMBLED_LINE', str(1))
             self.__config.set('program', 'DEVICE_MODEL_ID', str(95))
             self.__config.set('program', 'TRICOLOR_TEMPLATE', "****800*******")
+            self.__config.set('program', 'INFO_MODE', "0")
 
             self.set_default_for_values()
             self.__config.write(config_file)
@@ -99,6 +103,12 @@ class CConfig:
         if 1 <= line <= 5:
             return line
         raise ConfigError(f"Производственная линия'{line}' задана не верно!")
+
+    def get_info_mode(self) -> str | int:
+        mode = int(self.__INFO_MODE)
+        if mode == 0 or mode == 1:
+            return mode
+        raise ConfigError(f"Ошибка режима работы программы. Info mode не задан верно!")
 
     def get_device_model_id(self) -> str | int:
 
