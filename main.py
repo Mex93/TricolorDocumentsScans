@@ -385,8 +385,8 @@ class MainWindow(QMainWindow):
                                         tv_name = self.ctv.get_tv_name()
 
                                         self.clabel.set_text(f"Для указанной модели\n"
-                                                             f"'{tv_name}'[{pmodel_id}]\n"
-                                                             f"нет свободных ключей в базе данных!'\n"
+                                                             f"'{tv_name}'[{pmodel_id}]'\n"
+                                                             f"нет свободных ключей в базе данных!\n"
                                                              , "red", 10.0)
 
                                         self.cframe.set_flick(4)

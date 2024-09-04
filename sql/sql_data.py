@@ -28,7 +28,6 @@ class SQL_KEY_PROCESS_BASE:  # таблица созданных
     fd_tricolor_key = "tricolor_id"  #
     fd_tv_fk = "tv_fk"  #
     fd_used_device_sn = "used_device_sn"  #
-    fd_used_device_assy_id = "used_device_assy_id"  #
     fd_load_key_date = "load_key_date"  #
     fd_attach_on_device_date = "attach_on_device_date"  #
     fd_assembled_line = "assembled_line"  #
