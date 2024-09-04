@@ -205,12 +205,10 @@ class MainWindow(QMainWindow):
 
                                 is_find = False
                                 if input_type == INPUT_TYPE.TRICOLOR_ID:
-                                    if tv_fk == pmodel_id:
-                                        is_find = True
+                                    is_find = True
                                 elif input_type == INPUT_TYPE.TV_SN:
                                     if tricolor_key is not None:
-                                        if tv_fk == pmodel_id:
-                                            is_find = True
+                                        is_find = True
                                 if is_find:
                                     tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
 
@@ -242,12 +240,10 @@ class MainWindow(QMainWindow):
 
                                 is_find = False
                                 if input_type == INPUT_TYPE.TRICOLOR_ID:
-                                    if tv_fk == pmodel_id:
-                                        is_find = True
+                                    is_find = True
                                 elif input_type == INPUT_TYPE.TV_SN:
                                     if tricolor_id is not None:
-                                        if tv_fk == pmodel_id:
-                                            is_find = True
+                                        is_find = True
                                 if is_find is True:
                                     tv_name = self.get_current_tv_name_from_tv_model(tv_fk, csql)
 
@@ -282,8 +278,7 @@ class MainWindow(QMainWindow):
 
                                 is_find = False
                                 if input_type == INPUT_TYPE.TRICOLOR_ID:
-                                    if tv_fk == pmodel_id:
-                                        is_find = True
+                                    is_find = True
                                 elif input_type == INPUT_TYPE.TV_SN:
                                     if tricolor_id is not None:
                                         is_find = True
