@@ -21,8 +21,7 @@ class CConfig:
         self.__SQL_PORT = ''
         self.__SQL_DATABASE = ''
         self.__PRINTER_NAME = ''  # Название принтера в компе
-        self.__ASSEMBLED_LINE = ''  # Название принтера в компе
-        self.__TV_MODEL_ID = ''  # Название принтера в компе
+        self.__ASSEMBLED_LINE = ''  # Название принтера в комп
         self.__TRICOLOR_TEMPLATE = ''  # Название принтера в компе
         self.__INFO_MODE = ''  # Название принтера в компе
 
@@ -37,7 +36,6 @@ class CConfig:
         self.__SQL_DATABASE = ''
         self.__PRINTER_NAME = ''
         self.__ASSEMBLED_LINE = ''
-        self.__TV_MODEL_ID = ''
         self.__TRICOLOR_TEMPLATE = ''
         self.__INFO_MODE = ''
 
@@ -52,7 +50,6 @@ class CConfig:
 
         self.__PRINTER_NAME = self.__config.get('program', 'PRINTER_NAME')
         self.__ASSEMBLED_LINE = self.__config.get('program', 'ASSEMBLED_LINE')
-        self.__TV_MODEL_ID = self.__config.get('program', 'DEVICE_MODEL_ID')
 
         self.__TRICOLOR_TEMPLATE = self.__config.get('program', 'TRICOLOR_TEMPLATE')
         self.__INFO_MODE = self.__config.get('program', 'INFO_MODE')
@@ -73,7 +70,6 @@ class CConfig:
 
             self.__config.set('program', 'PRINTER_NAME', "GODEX G300")
             self.__config.set('program', 'ASSEMBLED_LINE', str(1))
-            self.__config.set('program', 'DEVICE_MODEL_ID', str(95))
             self.__config.set('program', 'TRICOLOR_TEMPLATE', "****800*******")
             self.__config.set('program', 'INFO_MODE', "0")
 
@@ -109,16 +105,6 @@ class CConfig:
         if mode == 0 or mode == 1:
             return mode
         raise ConfigError(f"Ошибка режима работы программы. Info mode не задан верно!")
-
-    def get_device_model_id(self) -> str | int:
-
-        if not self.__TV_MODEL_ID.isnumeric():
-            raise ConfigError("Номер модели устройства должен быть числом")
-
-        model_id = int(self.__TV_MODEL_ID)
-        if model_id < 0 or model_id > 150:
-            raise ConfigError("Номер модели устройства должен быть числом от 1 до 150")
-        return model_id
 
     def get_dbpassword(self):
         return self.__SQL_PASSWORD

@@ -16,7 +16,7 @@ from common import (send_message_box, SMBOX_ICON_TYPE, get_current_unix_time,
 from enuuuums import INPUT_TYPE
 from CPrinter import CPrinter
 
-from sql.CSQLQuerys import CSQLQuerys
+from sql.CSQLQuerys import CSQLQuerys, SQL_TV_MODELS_DATA
 from sql.enums import CONNECT_DB_TYPE
 
 
@@ -56,7 +56,6 @@ class MainWindow(QMainWindow):
 
             self.printer_name = self.cconfig.get_printer_name()
             self.assembled_line = self.cconfig.get_assembled_line()
-            self.cconfig.get_device_model_id()
             self.tricolor_template = self.cconfig.get_tricolor_template()
             self.info_mode = self.cconfig.get_info_mode()
 
@@ -71,11 +70,12 @@ class MainWindow(QMainWindow):
             return
         if self.info_mode == 1:
             self.setWindowTitle(f'Сканировка Tricolor 2024 v0.1b [Режим: информация]')
-        self.ctv = TVData()
+
         self.cframe = FlickerInterface(self)
         self.clabel = TextLabel(self)
         self.cinput = InputField(self)
         self.cprinter = CPrinter(self.printer_name)
+        self.cmodel = TVmodels(self)
 
         self.set_default_program_data()
 
@@ -83,16 +83,71 @@ class MainWindow(QMainWindow):
         self.ui.pushButton_cancel.clicked.connect(self.on_user_presed_on_cancel_btn)
         self.ui.lineEdit_input.returnPressed.connect(self.on_user_text_input_field)
         self.ui.action_info.triggered.connect(self.on_user_pressed_info)
+        self.ui.comboBox_model_name.activated.connect(self.on_user_clicked_on_model_change)
 
         self.set_block_interface()
+        self.ui.lineEdit_input.setEnabled(False)
+        self.load_models()
 
-        self.load_timer = threading.Timer(2.0, self.check_programm_data)
-        self.load_timer.start()
-        #
-        # self.ui.action_new_project.triggered.connect(self.on_user_clicked_new_project)
-        # self.ui.action_set_parameters.triggered.connect(self.on_user_clicked_config_project)
-        # self.ui.action_open.triggered.connect(self.on_user_focus)
-        # self.set_program_to_default_state()
+    def load_models(self):
+        csql = CSQLQuerys()
+        try:
+            result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
+            if result_connect is True:
+                result = csql.load_tricolor_models()
+                count = 0
+                if result is not False:
+                    for tv in result:
+                        tv_name = tv.get(SQL_TV_MODELS_DATA.fd_tv_name, None)
+                        tv_fk = tv.get(SQL_TV_MODELS_DATA.fd_tv_id, None)
+                        tv_template = tv.get(SQL_TV_MODELS_DATA.fd_tv_serial_number_template, None)
+                        if None in (tv_name, tv_fk, tv_template):
+                            continue
+
+                        self.cmodel.add_item_on_change(tv_fk, tv_name, tv_template)
+                        count += 1
+
+                if not count:
+                    self.send_error_message(
+                        "Во время выполнения программы произошла ошибка #3.\n"
+                        "Обратитесь к системному администратору!\n\n"
+                        f"Код ошибки: 'load_models -> [No Data]'")
+                    return
+                else:
+                    self.ui.comboBox_model_name.setCurrentIndex(-1)
+
+                    self.set_unblock_interface()
+                    self.clabel.set_text("Программа успешно загружена!\nВыберите модель устройства:", "green", 4.0)
+
+            else:
+                raise ValueError("Нет подключения к БД!")
+
+        except Exception as err:
+            print(err)
+            logging.critical(err)
+            self.send_error_message(
+                "Во время выполнения программы произошла ошибка #2.\n"
+                "Обратитесь к системному администратору!\n\n"
+                f"Код ошибки: 'load_models -> [{err}]'")
+            return False
+        finally:
+            csql.disconnect_from_db()
+
+    def on_user_clicked_on_model_change(self):
+        text = self.ui.comboBox_model_name.currentText()
+        if text:
+            tv_fk = self.cmodel.get_item_from_tv_name(text)
+            if tv_fk != -1:
+                self.cmodel.set_changed_model(tv_fk)
+                self.set_unblock_interface()
+                self.ui.comboBox_model_name.setEnabled(False)
+                self.ui.lineEdit_input.setEnabled(True)
+                return
+
+        self.send_error_message(
+            "Во время выполнения программы произошла ошибка #4.\n"
+            "Обратитесь к системному администратору!\n\n"
+            f"Код ошибки: 'on_user_clicked_on_model_change -> [Not find changed models]'")
 
     @staticmethod
     def on_user_pressed_info():
@@ -104,49 +159,13 @@ class MainWindow(QMainWindow):
                          title="О программе",
                          variant_yes="Закрыть", variant_no="")
 
-    def check_programm_data(self) -> bool:
-        self.tv_sn_template = ""
-
-        csql = CSQLQuerys()
-        try:
-            result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
-            if result_connect is True:
-
-                model_id = self.cconfig.get_device_model_id()
-                result = self.check_correct_data_in_models_table(model_id, csql)
-                if result[0] == 0:
-                    error_id, template, name, tricolor = result
-                    self.set_unblock_interface()
-                    self.ctv.set_tv_model_id(model_id)
-                    self.ctv.set_tv_template(template)
-                    self.ctv.set_tv_name(name)
-                    self.clabel.set_text("Программа успешно загружена", "green", 4.0)
-                    return True
-
-                else:
-                    _, error_text = result
-                    self.clabel.set_text(error_text, "red", 400.0)
-
-                    return False
-
-            else:
-                raise ValueError("Нет подключения к БД!")
-
-        except Exception as err:
-            print(err)
-            logging.critical(err)
-            self.send_error_message(
-                "Во время выполнения программы произошла ошибка #2.\n"
-                "Обратитесь к системному администратору!\n\n"
-                f"Код ошибки: 'on_user_text_input_field -> [{err}]'")
-            return False
-        finally:
-            csql.disconnect_from_db()
-
     def on_clear_input_callback(self):
         self.cinput.clear_field()
 
     def on_user_text_input_field(self):
+
+        if not self.cmodel.is_model_changed():
+            return
 
         input_text = self.cinput.get_current_value()
         self.cinput.clear_field()
@@ -166,7 +185,7 @@ class MainWindow(QMainWindow):
                                  variant_yes="Закрыть", variant_no="", callback=None)
                 return
 
-            tv_tempate = self.ctv.get_tv_template()
+            tv_tempate = self.cmodel.get_model_template()
             # Пикнут и подошло по шаблону триколора
 
             input_type = INPUT_TYPE.NONE
@@ -177,11 +196,12 @@ class MainWindow(QMainWindow):
 
             if input_type == INPUT_TYPE.NONE:
                 send_message_box(icon_style=SMBOX_ICON_TYPE.ICON_ERROR,
-                                 text=f"Указанные данные '{input_text}' не подходят ни к одному шаблону!",
+                                 text=f"Указанные данные '{input_text}' не подходят ни к одному шаблону!\n\n"
+                                      f"Возможно модель выбрана неверно!!!",
                                  title="Ошибка ввода данных",
                                  variant_yes="Ок", variant_no="", callback=None)
                 return
-            pmodel_id = self.ctv.get_tv_model_id()
+            pmodel_id = self.cmodel.get_model_fk_changed()
             csql = CSQLQuerys()
             try:
                 # Этот код полностью проверит есть ли в какой либо таблице этот ключ
@@ -310,9 +330,10 @@ class MainWindow(QMainWindow):
 
                                     return
                                 else:
-                                    self.clabel.set_text(f"Указанный ключ Tricolor ID '{input_text}' не обнаружен в базе ключей!\n"
-                                                         f"Он не привязан ни к устройству, ни к базе истории ключей!"
-                                                         , "red", 10.0)
+                                    self.clabel.set_text(
+                                        f"Указанный ключ Tricolor ID '{input_text}' не обнаружен в базе ключей!\n"
+                                        f"Он не привязан ни к устройству, ни к базе истории ключей!"
+                                        , "red", 10.0)
 
                                     return
                             elif input_type == INPUT_TYPE.TV_SN:
@@ -367,7 +388,7 @@ class MainWindow(QMainWindow):
                                                 convert_date_from_sql_format_ex(str(load_date))}]'")
                                             return
                                         # привязка
-                                        tv_name = self.ctv.get_tv_name()
+                                        tv_name = self.cmodel.get_model_name_changed()
 
                                         self.clabel.set_text(
                                             f"Ключ Tricolor ID '{tricolor_key}' успешно привязан к устройству\n"
@@ -386,7 +407,7 @@ class MainWindow(QMainWindow):
                                         return
 
                                     else:
-                                        tv_name = self.ctv.get_tv_name()
+                                        tv_name = self.cmodel.get_model_name_changed()
 
                                         self.clabel.set_text(f"Для указанной модели\n"
                                                              f"'{tv_name}'[{pmodel_id}]'\n"
@@ -414,9 +435,6 @@ class MainWindow(QMainWindow):
                         return
                     finally:
                         csql.disconnect_from_db()
-
-
-
                 else:
                     raise ValueError("Нет подключения к БД!")
 
@@ -480,8 +498,8 @@ class MainWindow(QMainWindow):
                 new_tricolor_text = tricolor_text.replace("Tricolor ID: ", "")
                 self.cprinter.send_print_label(new_tricolor_text)
 
-                tv_name = self.ctv.get_tv_name()
-                tv_fk = self.ctv.get_tv_model_id()
+                tv_name = self.cmodel.get_model_name_changed()
+                tv_fk = self.cmodel.get_model_fk_changed()
                 tv_sn = tvsn_text.replace("Model Name: ", "")
 
                 logging.info(f"Оператор распечатал ключ Tricolor ID '{new_tricolor_text}' "
@@ -511,14 +529,10 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         # с таймерами
-        if threading.Timer.is_alive(self.load_timer):
-            self.load_timer.cancel()
         self.cframe.stop_flick()
         self.clabel.clear_text()
 
     def set_close(self):
-        if threading.Timer.is_alive(self.load_timer):
-            self.load_timer.cancel()
         self.cframe.stop_flick()
         self.clabel.clear_text()
         sys.exit()
@@ -536,31 +550,6 @@ class MainWindow(QMainWindow):
 
     def set_unblock_interface(self):
         self.ui.frame_main.setEnabled(True)
-
-
-class TVData:
-    def __init__(self):
-        self.__tv_name: str = ""
-        self.__tv_model_id: int = 0
-        self.__tv_template: str = ""
-
-    def set_tv_template(self, model_id: int):
-        self.__tv_template = model_id
-
-    def set_tv_model_id(self, model_id: int):
-        self.__tv_model_id = model_id
-
-    def set_tv_name(self, tv_name: str):
-        self.__tv_name = tv_name
-
-    def get_tv_model_id(self) -> int:
-        return self.__tv_model_id
-
-    def get_tv_template(self) -> str:
-        return self.__tv_template
-
-    def get_tv_name(self) -> str:
-        return self.__tv_name
 
 
 class InputField:
@@ -715,6 +704,67 @@ class FlickerInterface:
     def __start_timer(self):
         self.__timer_id = threading.Timer(1.0, self.__on_change_new_state)
         self.__timer_id.start()
+
+
+class TVmodels:
+    def __init__(self, main_menu: MainWindow):
+        self.__main_menu = main_menu
+        self.__tv_list = list()
+        self.__current_model_fk = 0
+        self.__current_model_name = ""
+        self.__current_model_template = ""
+        self.__list_max_index = 0
+        self.__reset_changed_model()
+
+    def add_item_on_change(self, tv_fk: int, tv_name: str, tv_template: str):
+
+        mm = self.__main_menu.ui
+        mm.comboBox_model_name.addItem(tv_name)
+        mm.comboBox_model_name.setItemText(self.__list_max_index, tv_name)
+
+        self.__list_max_index += 1
+        self.__tv_list.append([tv_fk, tv_name, tv_template])
+
+    def __get_item_index_from_tv_fk(self, tv_fk: int) -> int:
+        for index, item in enumerate(self.__tv_list):
+            if item[0] == tv_fk:
+                return index
+        return -1
+
+    def get_item_from_tv_name(self, tv_name: str) -> int:
+        for index, item in enumerate(self.__tv_list):
+            if item[1] == tv_name:
+                return item[0]
+        return 0
+
+    def set_changed_model(self, tv_fk: int) -> bool:
+        index = self.__get_item_index_from_tv_fk(tv_fk)
+        if index != -1:
+            self.__current_model_fk = tv_fk
+            model_name = self.__tv_list[index][1]
+            self.__current_model_name = model_name
+            self.__current_model_template = self.__tv_list[index][2]
+            return True
+
+    def __reset_changed_model(self) -> None:
+        self.__current_model_fk = 0
+        self.__current_model_name = ""
+        self.__current_model_template = ""
+
+    def is_model_changed(self) -> bool:
+        if self.__current_model_fk == 0:
+            return False
+        else:
+            return True
+
+    def get_model_template(self) -> str:
+        return self.__current_model_template
+
+    def get_model_fk_changed(self) -> int:
+        return self.__current_model_fk
+
+    def get_model_name_changed(self) -> str:
+        return self.__current_model_name
 
 
 if __name__ == '__main__':

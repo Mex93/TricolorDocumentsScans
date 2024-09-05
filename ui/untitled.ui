@@ -41,6 +41,21 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
        <item>
+        <widget class="QComboBox" name="comboBox_model_name">
+         <property name="font">
+          <font>
+           <pointsize>20</pointsize>
+          </font>
+         </property>
+         <property name="editable">
+          <bool>false</bool>
+         </property>
+         <property name="placeholderText">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
