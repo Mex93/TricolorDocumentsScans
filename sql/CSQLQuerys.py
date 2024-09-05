@@ -35,6 +35,28 @@ class CSQLQuerys(CSqlAgent):
             return False
         return result
 
+    def update_current_tricolor_models(self, tv_fk: int) -> bool | tuple:
+        query_string = (f"SELECT "
+                        f"{SQL_TV_MODELS_DATA.fd_tv_name}, "
+                        f"{SQL_TV_MODELS_DATA.fd_tv_serial_number_template}, "
+                        f"{SQL_TV_MODELS_DATA.fd_tv_id} "
+                        f"FROM {SQL_TABLE_NAME.tb_tv_models} "
+                        f"WHERE {SQL_TV_MODELS_DATA.fd_tv_id} = %s "
+                        f"LIMIT 1")  # на всякий лимит
+
+        result = self.sql_query_and_get_result(
+            self.get_sql_handle(), query_string, (tv_fk, ), "_1", )  # Запрос типа аасоциативного массива
+        if result is False:  # Errorrrrrrrrrrrrr based data
+            return False
+
+        tv_template = result[0].get(SQL_TV_MODELS_DATA.fd_tv_serial_number_template, None)
+        tv_name = result[0].get(SQL_TV_MODELS_DATA.fd_tv_name, None)
+        tv_fk = result[0].get(SQL_TV_MODELS_DATA.fd_tv_id, None)
+        if None in (tv_fk, tv_name, tv_template):
+            return False
+        result = (tv_fk, tv_name, tv_template)
+        return result
+
     def get_tv_model_data(self, tv_model_id: int) -> tuple | bool:
         query_string = (f"SELECT "
                         f"{SQL_TV_MODELS_DATA.fd_tv_name}, "

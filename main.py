@@ -162,6 +162,40 @@ class MainWindow(QMainWindow):
     def on_clear_input_callback(self):
         self.cinput.clear_field()
 
+    def set_update_models(self):
+        csql = CSQLQuerys()
+        try:
+            result_connect = csql.connect_to_db(CONNECT_DB_TYPE.LINE)
+            if result_connect is True:
+                tv_fk = self.cmodel.get_model_fk_changed()
+                result = csql.update_current_tricolor_models(tv_fk)
+                if result is not False:
+                    tv_fk, tv_name, tv_template = result
+                    tv_fk = self.cmodel.get_item_from_tv_name(tv_name)
+                    if tv_fk != -1:
+                        if (tv_name == self.cmodel.get_model_name_changed() and
+                                tv_template == self.cmodel.get_model_template()):
+                            return True
+                        else:
+                            raise ValueError("Модель не найдена!")
+                    else:
+                        raise ValueError("Модель не найдена!")
+                else:
+                    raise ValueError("Модель не найдена!")
+            else:
+                raise ValueError("Нет подключения к БД!")
+
+        except Exception as err:
+            print(err)
+            logging.critical(err)
+            self.send_error_message(
+                "Во время выполнения программы произошла ошибка #666.\n"
+                "Обратитесь к системному администратору!\n\n"
+                f"Код ошибки: 'set_update_models -> [{err}]'")
+            return False
+        finally:
+            csql.disconnect_from_db()
+
     def on_user_text_input_field(self):
 
         if not self.cmodel.is_model_changed():
@@ -183,6 +217,8 @@ class MainWindow(QMainWindow):
                                  text=f"В вводимой информации обнаружены недопустимые символы!",
                                  title="Внимание!",
                                  variant_yes="Закрыть", variant_no="", callback=None)
+                return
+            if not self.set_update_models():
                 return
 
             tv_tempate = self.cmodel.get_model_template()
@@ -725,7 +761,7 @@ class TVmodels:
         self.__list_max_index += 1
         self.__tv_list.append([tv_fk, tv_name, tv_template])
 
-    def __get_item_index_from_tv_fk(self, tv_fk: int) -> int:
+    def get_item_index_from_tv_fk(self, tv_fk: int) -> int:
         for index, item in enumerate(self.__tv_list):
             if item[0] == tv_fk:
                 return index
@@ -738,13 +774,22 @@ class TVmodels:
         return 0
 
     def set_changed_model(self, tv_fk: int) -> bool:
-        index = self.__get_item_index_from_tv_fk(tv_fk)
+        index = self.get_item_index_from_tv_fk(tv_fk)
         if index != -1:
-            self.__current_model_fk = tv_fk
             model_name = self.__tv_list[index][1]
-            self.__current_model_name = model_name
-            self.__current_model_template = self.__tv_list[index][2]
+            self.set_changed_model_ex(index, tv_fk, model_name, self.__tv_list[index][2])
+
             return True
+
+    def set_changed_model_ex(self, index: int, tv_fk: int, tv_name: str, tv_template: str) -> bool:
+        self.__tv_list[index][0] = tv_fk
+        self.__tv_list[index][1] = tv_name
+        self.__tv_list[index][2] = tv_template
+        self.__current_model_fk = tv_fk
+        model_name = tv_name
+        self.__current_model_name = model_name
+        self.__current_model_template = tv_template
+        return True
 
     def __reset_changed_model(self) -> None:
         self.__current_model_fk = 0
