@@ -27,6 +27,7 @@ class CConfig:
 
         self.__config = configparser.ConfigParser()
         self.__config.add_section('program')
+        self.__config.add_section('database')
 
     def set_default_for_values(self):
         self.__SQL_USER_NAME = ''
